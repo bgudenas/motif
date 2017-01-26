@@ -15,12 +15,21 @@ Rando_DNA_Strings = function(seq_num, width){
 }
 
 
-Motif_Implanter = function(seqs, motif){
+Motif_Implanter = function(seqs, motif, var_num){
     library(stringr)
     seq_length = nchar(seqs[1])
-     # motif = paste(sample(DNA_ALPHABET[1:4], size = motif_length, replace=TRUE), collapse = "")
+    var_pos = sample(1:nchar(motif), var_num)
      motif_length=nchar(motif)
     for ( i in 1:length(seqs)){
+        
+        if ( var_num !=0){
+            mot_prefix = str_sub(motif, 1, end = var_pos-1)
+            new_pos = sample(c("A","T","C","G"), 1)
+            mot_suffix = str_sub(motif, var_pos+1, end = nchar(motif))
+            motif = str_c(mot_prefix, new_pos, mot_suffix)
+            print(motif)
+        }
+        
         DNA = seqs[i]
         index = sample(1:(seq_length-motif_length), 1)
         prefix = str_sub(DNA, start = 1, end = index)
@@ -48,71 +57,93 @@ seeder = function(object) {
 }
 
 
-
-#TODO 
-# mutation = function(object, parent){
-#     solution <- as.vector(object@population[parent, ])
-
-
 PWM_dist = function(individual){
-    pos_set = individual[1:positives]
-    neg_set = individual[(positives+1) : length(individual)]
+    # pos_set = individual[1:positives]
+    # neg_set = individual[(positives+1) : length(individual)]
     
-    motif_pos = DNAStringSet(Seqs[1:positives], start = pos_set, end = pos_set + (motif_width-1))
-    motif_neg = DNAStringSet( Seqs[(positives+1) : length(individual) ], start = neg_set, end = neg_set + (motif_width-1))
-    
-    PWM_pos = PWM(motif_pos, prior.params = pos.params, type="log2probratio")
-    PWM_neg = PWM(motif_neg, prior.params = neg.params, type="log2probratio")
-    
-    fitness = sum(colSums(abs(PWM_pos - PWM_neg)))
-    return(fitness)
+    motif_pos = DNAStringSet(Seqs, start = individual, end = individual + (motif_width-1))
+    # motif_neg = DNAStringSet( Seqs[(positives+1) : length(individual) ], start = neg_set, end = neg_set + (motif_width-1))
+    PWM_pos = consensusMatrix(motif_pos, as.prob = TRUE)[1:4,]
+    IC = 0
+    for ( i in 1:nrow(PWM_pos)){
+        for (j in 1:ncol(PWM_pos)){
+            IC = IC + PWM_pos[i,j]*log2(PWM_pos[i,j] / prior.params[names(prior.params) == rownames(PWM_pos)[i]] )
+        }
+    }
+    return(IC)
 }
 
     
 mutation = function(object, parent){
-    
      individual <- as.vector(object@population[parent, ])
      
-     pick = sample(1:length(Seqs),1)
-     if (pick <= positives){
-         pos_set = solution[1:positives]
-         pos_set = pos_set[-pick]
+        pick = sample(1:length(Seqs),1)
+     # if (pick <= positives){
+         # pos_set = individual[1:positives]
+         pos_set = individual[-pick]
          
-         pos_picks = 1:positives
-         pos_picks = pos_picks[-pick]
+         motif = DNAStringSet(Seqs[-pick], start = pos_set, end = pos_set + (motif_width-1))
          
-         motif = DNAStringSet(Seqs[pos_picks], start = pos_set, end = pos_set + (motif_width-1))
-         
-         PWM_mat = PWM(motif, prior.params = pos.params, type="log2probratio")
+         PWM_mat = PWM(motif, prior.params = prior.params)
          
          probs = PWMscoreStartingAt(PWM_mat, Seqs[pick], starting.at = 1:(nchar(Seqs[pick])-motif_width))
+         probs[probs < 0 ] = 0
          probs = probs /sum(probs)
          
          new_pick = sample(1:(nchar(Seqs[pick])-motif_width), prob = probs, 1)
          individual[pick] = new_pick
          
-     } else {
-         neg_set = solution[(positives+1):length(solution)]
-         neg_set = neg_set[-(pick-positives)]
-         
-         neg_picks = (positives+1):length(solution)
-         neg_picks = neg_picks[-(pick-positives)]
-         
-         motif = DNAStringSet(Seqs[neg_picks], start = neg_set, end = neg_set + (motif_width-1))
-         
-         PWM_mat = PWM(motif, prior.params = neg.params, type="log2probratio")
-         
-         probs = PWMscoreStartingAt(PWM_mat, Seqs[pick], starting.at = 1:(nchar(Seqs[pick])-motif_width))
-         probs = probs /sum(probs)
-         
-         new_pick = sample(1:(nchar(Seqs[pick])-motif_width), prob = probs, 1)
-         individual[pick] = new_pick
-     }
+     # } else {
+     #     neg_set = individual[(positives+1):length(individual)]  ### solution vector
+     #     neg_set = neg_set[-(pick-positives)]
+     #     
+     #     neg_picks = (positives+1):length(Seqs) ## index
+     #     neg_picks = neg_picks[-(pick-positives)]
+     #     
+     #     motif = DNAStringSet(Seqs[neg_picks], start = neg_set, end = neg_set + (motif_width-1))
+     #     
+     #     PWM_mat = PWM(motif)
+     #     
+     #     probs = PWMscoreStartingAt(PWM_mat, Seqs[pick], starting.at = 1:(nchar(Seqs[pick])-motif_width))
+     #     probs[probs < median(probs)] = 0
+     #     probs = probs /sum(probs)
+     #     
+     #     new_pick = sample(1:(nchar(Seqs[pick])-motif_width), prob = probs, 1)
+     #     individual[pick] = new_pick
+     # }
      return(individual)
 }
          
          
+pt_crossover = function(object, parentals){   
+    parents <- object@population[parentals, , drop = FALSE]
+    children <- matrix(as.double(0), nrow = 2, ncol = ncol(parents))
+    fitnessChildren <- rep(NA, 2)
     
+    children[1,] = parents[1,]
+    children[2,] = parents[2,]
+    
+    break_point = sample(2: (ncol(children)-2), 1)
+    
+    children[1, break_point : ncol(parents)] = children[2, break_point : ncol(parents)]
+    
+    children[2, break_point : ncol(parents)] = parents[1, break_point : ncol(parents)]
+    
+    out <- list(children = children, fitness = fitnessChildren)
+    return(out) 
+}
+
+
+pwm2ic<-function(pwm) {
+    npos = ncol(pwm)
+    ic = numeric(length=npos)
+    for (i in 1:npos) {
+        ic[i] = 2 + sum(sapply(pwm[, i], function(x) { 
+            if (x > 0) { x*log2(x) } else { 0 }
+        }))
+    }    
+    return(ic)
+}
     
 
 
