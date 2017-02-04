@@ -1,6 +1,6 @@
 
 library(gtools)
-
+ 
 seeder = function(object) {
     pop_size = object@popSize
     
@@ -26,7 +26,7 @@ PWM_fitness = function(individual){
     scores = vector(mode = "numeric", length = length(rand_seqs))
     for ( rand in 1:length(rand_seqs)) {
         i= rand_seqs[rand]
-        scores[rand] = countPWM(pwm, Seqs[i], min.score = "70%")
+        scores[rand] = countPWM(pwm, Seqs[i], min.score = "60%")
     }
     
     # pwm = pwm + 0.000001
