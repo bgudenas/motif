@@ -132,17 +132,55 @@ pt_crossover = function(object, parentals){
     out <- list(children = children, fitness = fitnessChildren)
     return(out) 
 }
+# 
+# 
+# pwm2ic<-function(pwm) {
+#     npos = ncol(pwm)
+#     ic = numeric(length=npos)
+#     for (i in 1:npos) {
+#         ic[i] = 2 + sum(sapply(pwm[, i], function(x) { 
+#             print(x)
+#             if (x > 0) { x*log2(x) } else { 0 }
+#         }))
+#     }    
+#     return(ic)
+# }
 
 
-pwm2ic<-function(pwm) {
+
+
+pwm2ic <-function(pwm) {
     npos = ncol(pwm)
     ic = numeric(length=npos)
-    for (i in 1:npos) {
-        ic[i] = 2 + sum(sapply(pwm[, i], function(x) { 
-            if (x > 0) { x*log2(x) } else { 0 }
-        }))
-    }    
-    return(ic)
+    for (j in 1:npos) {
+        for (i in 1:nrow(pwm)) {
+            
+            if (pwm[i,j] > 0){ 
+                prior.prob = prior.params[names(prior.params) == names(pwm[i,j])]
+                
+                ic[j] = ic[j] + pwm[i,j] * log2(pwm[i, j]/ prior.prob)  
+            }
+        }
+    }
+            
+    return(sum(ic))
+}
+
+
+
+dinuc_shuffle = function(sequence){
+    shuff=""
+    while (nchar(sequence) > 1){
+        index = sample(1:(nchar(sequence)-1), 1)
+        di_nuc = str_sub(sequence, start = index, end = index+1)
+        shuff = str_c(shuff, di_nuc)
+        
+        prefix = str_sub(string = sequence, start = 1, end = (index-1))
+        suffix = str_sub(string = sequence, start = (index+2), end = nchar(sequence))
+        sequence = str_c(prefix, suffix)
+        # print(nchar(sequence))
+    }
+    return(shuff)
 }
     
 
