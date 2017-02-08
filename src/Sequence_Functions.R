@@ -3,6 +3,7 @@
 library(Biostrings)
 library(stringr)
 library(flexclust)
+library(stringdist)
 
 
 Rando_DNA_Strings = function(seq_num, width){
@@ -16,18 +17,22 @@ Rando_DNA_Strings = function(seq_num, width){
 
 
 Motif_Implanter = function(seqs, motif, var_num){
+    old_motif = motif
     library(stringr)
     seq_length = nchar(seqs[1])
-    var_pos = sample(1:nchar(motif), var_num)
+    
      motif_length=nchar(motif)
     for ( i in 1:length(seqs)){
-        
+        motif=old_motif
         if ( var_num !=0){
+            for (j in 1:var_num){
+            var_pos = sample(1:nchar(motif), 1)
             mot_prefix = str_sub(motif, 1, end = var_pos-1)
             new_pos = sample(c("A","T","C","G"), 1)
             mot_suffix = str_sub(motif, var_pos+1, end = nchar(motif))
             motif = str_c(mot_prefix, new_pos, mot_suffix)
-            print(motif)
+            }
+            print(stringdist(old_motif, motif))
         }
         
         DNA = seqs[i]
@@ -182,6 +187,20 @@ dinuc_shuffle = function(sequence){
     }
     return(shuff)
 }
+
+
+pwm_2_seq = function(pwm){
+    seq=""
+    
+    for ( i in 1:ncol(pwm)){
+        let = names(which.max(pwm[ ,i]))
+        seq = str_c(seq,let)
+    }
+    return(seq)
+}
+pwm_2_seq(pwm)       
+    
+string_dist()
     
 
 

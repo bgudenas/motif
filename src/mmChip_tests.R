@@ -4,10 +4,9 @@ library(Biostrings)
 library(biomaRt)
 source("http://www.bioconductor.org/biocLite.R")
 biocLite("seqLogo")
-biocLite( "BSgenome.Mmusculus.UCSC.mm8")
+biocLite( "BSgenome.Mmusculus.UCSC.mm8.masked")
 library(BSgenome)
-library(BSgenome.Mmusculus.UCSC.mm8)
-l
+library(BSgenome.Mmusculus.UCSC.mm8.masked)
 
 
 mmChip = read.csv("./Data/mmc3.csv")
@@ -16,7 +15,7 @@ Sequences <- data.frame(lapply(mmChip, as.character), stringsAsFactors=FALSE)
 
 for (col in 1:ncol(mmChip)){
         
-    for ( i in 1:length(mmChip[ ,col])) {
+    for ( i in 1:nrow(mmChip)) {
         if ( mmChip[i, col] != ""){
         peak = str_split(mmChip[i, col] , "-")[[1]]
         chrom = str_split(peak[[1]][1], ":")[[1]][1]
@@ -42,11 +41,12 @@ library(GA)
 library(seqLogo)
 
 source("./src/Sequence_Functions.R")
-# Seqs = Motif_Implanter(seqs = Rando_DNA_Strings(seq_num = 200, width = 500), motif ="ATGCACAA", var_num = 1 )
-# background = Motif_Implanter(seqs = Rando_DNA_Strings(seq_num = 200, width = 500), motif ="", var_num = 0 )
+org_motif = "ATGGTGCTCGCATTA"
+Seqs = Motif_Implanter(seqs = Rando_DNA_Strings(seq_num = 100, width = 100), motif = "ATGGTGCTCGCATTA", var_num = 4 )
+background = Motif_Implanter(seqs = Rando_DNA_Strings(seq_num = 100, width = 100), motif ="", var_num = 0 )
+positives = length(Seqs)
 
-
-Seqs = Sequences$c.Myc.bound.loci
+Seqs = Sequences$Zfx.bound.loci
 Seqs = Seqs[Seqs!=""]
 positives = length(Seqs)
 
@@ -59,7 +59,7 @@ for ( i in 1:length(background)){
 # # background = background[1:length(Seqs)]
 
 Seqs =c(Seqs, background)
-motif_width = 8
+motif_width = 15
 # priors = letterFrequency(DNAStringSet(Seqs), letters = DNA_BASES)
 # prior.params = colSums(priors)/sum(priors)
 
@@ -67,8 +67,8 @@ source("./src/PWM_functions.R")
 GA = ga("binary", nBits = (4*motif_width),
         fitness = PWM_fitness, population = seeder,
         crossover = PWM_crossover, mutation = PWM_mutation,
-        popSize= 200, maxiter=300,
-        pmutation= 0.4, pcrossover=0.5, run = 20)
+        popSize= 300, maxiter=300,
+        pmutation= 0.4, pcrossover=0.6, run = 40)
 
 
 pwm = matrix(GA@solution, nrow=4)
@@ -76,15 +76,26 @@ rownames(pwm) = c("A", "C", "G", "T")
 seqLogo(pwm)
 
 
-pop = GA@population[order(GA@fitness, decreasing = TRUE), ]
 
-pwm2 = matrix(pop[5,] , nrow=4)
-rownames(pwm2) = c("A", "C", "G", "T")
-seqLogo(pwm2)
+1 - (stringdist(org_motif, pwm_2_seq(pwm)) / 15)
 
-
-
-vec = vector(length = length(Seqs))
-for (i in 1:length(Seqs)){
-    vec[i] = countPattern(pattern = "CACGTG", subject = Seqs[i])
-}
+# 
+# 
+# 
+# pop = GA@population[order(GA@fitness, decreasing = TRUE), ]
+# 
+# for (i in 1:10){
+#     pwm2 = matrix(pop[i,] , nrow=4)
+#     rownames(pwm2) = c("A", "C", "G", "T")
+#     seqLogo(pwm2)
+# }
+# 
+# 
+# 
+# 
+# 
+# vec = vector(length = length(Seqs))
+# for (i in 1:length(Seqs)){
+#     vec[i] = countPattern(pattern = "TGTAT", subject = Seqs[i])
+# }
+# sum(vec[1:positives])/ sum( vec[ (positives+1) : length(Seqs)])

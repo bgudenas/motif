@@ -24,23 +24,24 @@ PWM_fitness = function(individual){
     rownames(pwm) = c("A", "C", "G", "T")
     
     IC = pwm2ic(pwm)
-    pwm = pwm+ 0.0001
+    pwm = pwm + 0.0001
     
     negatives = (length(Seqs)-positives)+1
-    rand_seqs = sample(negatives:length(Seqs), size = sqrt(negatives)) #0.05*negatives
+    rand_seqs = sample(negatives:length(Seqs), size = sqrt(length(negatives))) #0.05*negatives
     scores = vector(mode = "numeric", length = length(rand_seqs))
+    # neg_scores = vector(mode = "numeric", length = length(rand_seqs))
     for ( rand in 1:length(rand_seqs)) {
-        i= rand_seqs[rand]
+        i = rand_seqs[rand]
         norm_score = countPWM(pwm, Seqs[i], min.score = "60%")
-        # rev = reverseComplement(DNAString(Seqs[i]))
-        # rev_score = countPWM(pwm, rev, min.score = "60%")
-        # scores[rand] = sum(norm_score, rev_score)
-        scores[rand] = sum(norm_score)
-        
+        rev = reverseComplement(DNAString(Seqs[i]))
+        rev_score = countPWM(pwm, rev, min.score = "60%")
+       scores[rand] = sum(norm_score, rev_score)
+       
     }
 
     
-    return(IC/ (sum(scores)+1))
+    # return(IC/ ((sum(neg_scores)+1) /(sum(scores)+1)) ) 
+    return(IC/(sum(scores)+1))
 }
 
 
@@ -78,16 +79,16 @@ PWM_mutation = function(object, parent){
         # i= rand_seqs[rand]
         scores_seq  = PWMscoreStartingAt(pwm, rSeqs[rand], starting.at = 1 : (nchar(rSeqs[rand]) - motif_width ) )
         
-        # scores_rev = PWMscoreStartingAt(pwm, reverseComplement(DNAString(rSeqs[rand]), starting.at = 1 : (nchar(rSeqs[rand])) - motif_width ) )
-        # 
-        # if ( max(scores_rev) > max(scores_seq) ){
-        #     max_score = which.max(scores_rev)
-        #     rSeqs[rand] = as.character(reverseComplement(DNAString(rSeqs[rand])))
-        #     
-        # } else {max_score = which.max(scores_seq)}
-        # 
-        # scores[rand] = max_score
-        scores[rand] = which.max(scores_seq)
+        scores_rev = PWMscoreStartingAt(pwm, reverseComplement(DNAString(rSeqs[rand]), starting.at = 1 : (nchar(rSeqs[rand])) - motif_width ) )
+
+        if ( max(scores_rev) > max(scores_seq) ){
+            max_score = which.max(scores_rev)
+            rSeqs[rand] = as.character(reverseComplement(DNAString(rSeqs[rand])))
+
+        } else {max_score = which.max(scores_seq)}
+
+        scores[rand] = max_score
+        # scores[rand] = which.max(scores_seq)
     }
     mut_pos = DNAStringSet(rSeqs, start = scores, end = scores + (motif_width-1))
     pwm = consensusMatrix(mut_pos, as.prob = TRUE)[1:4, ]
