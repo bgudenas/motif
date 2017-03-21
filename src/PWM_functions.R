@@ -1,4 +1,3 @@
-
 library(gtools)
 library(Biostrings)
 
@@ -18,7 +17,6 @@ seeder = function(object) {
 }
 
 
-
 PWM_fitness = function(individual){
     pwm = matrix(individual, nrow=4, ncol = motif_width)
     rownames(pwm) = c("A", "C", "G", "T")
@@ -32,20 +30,29 @@ PWM_fitness = function(individual){
     # neg_scores = vector(mode = "numeric", length = length(rand_seqs))
     for ( rand in 1:length(rand_seqs)) {
         i = rand_seqs[rand]
-        norm_score = countPWM(pwm, Seqs[i], min.score = "60%")
-        rev = reverseComplement(DNAString(Seqs[i]))
-        rev_score = countPWM(pwm, rev, min.score = "60%")
-       scores[rand] = sum(norm_score, rev_score)
+        norm_score = PWMscoreStartingAt(pwm, Seqs[i], 1:(nchar(Seqs[i])-motif_width))
+        # rev = reverseComplement(DNAString(Seqs[i]))
+        # rev_score = countPWM(pwm, rev, min.score = "60%")
+       scores[rand] = mean(norm_score)/maxScore(pwm)
        
     }
 
-    
-    # return(IC/ ((sum(neg_scores)+1) /(sum(scores)+1)) ) 
-    return(IC/(sum(scores)+1))
+    return(IC/(sum(scores)))
 }
 
 
 
+
+rando_mutation = function(object, parent){
+    individual <- as.vector(object@population[parent, ])
+    pwm = matrix(individual, nrow=4, ncol = motif_width)
+    rownames(pwm) = c("A", "C", "G", "T")
+    
+    mut_pos = sample(1:ncol(pwm), 1)
+    pwm[ ,mut_pos] = as.vector(t(rdirichlet(1, c(1,1,1,1))))
+    return(as.vector(pwm))
+}
+    
 
 
 PWM_mutation = function(object, parent){
@@ -53,25 +60,9 @@ PWM_mutation = function(object, parent){
     pwm = matrix(individual, nrow=4, ncol = motif_width)
     rownames(pwm) = c("A", "C", "G", "T")
     
-    
-    # maxes = apply(pwm, 2, max)
-    # 
-    # maxes = 1-maxes
-    # probs = maxes/sum(maxes)
-    # 
-    # mut_chose = sample(1:ncol(pwm), 1, prob = probs)
-    # 
-    # pwm[ , mut_chose] = pwm[, mut_chose][sample(1:4)]
-    
     pwm = pwm + 0.0001
     pwm = log2(pwm)
 
-    # scores = vector(mode = "numeric", length = length(Seqs))
-# 
-#     best = sum(apply(pwm, 2, max))
-#     if (best < 0){
-#         threshold = best + (best*0.33)
-#     } else threshold = best*0.33
     rand_seqs = sample(1:positives, size = sqrt(positives)) #0.01*positives
     rSeqs = Seqs[rand_seqs]
     scores = vector(mode = "numeric", length = length(rand_seqs))
@@ -88,7 +79,6 @@ PWM_mutation = function(object, parent){
         } else {max_score = which.max(scores_seq)}
 
         scores[rand] = max_score
-        # scores[rand] = which.max(scores_seq)
     }
     mut_pos = DNAStringSet(rSeqs, start = scores, end = scores + (motif_width-1))
     pwm = consensusMatrix(mut_pos, as.prob = TRUE)[1:4, ]
@@ -100,7 +90,7 @@ PWM_crossover = function(object, parentals){
     parents <- object@population[parentals, , drop = FALSE]
     fitnessChildren <- rep(NA, 2)
     
-    mut_num = sample(2:(motif_width-2), 1)  ## chose num of cols to mutate (2:motif_width-2)
+    mut_num = sample(1:(motif_width-1), 1)  ## chose num of cols to mutate (2:motif_width-2)
     
     mut_pos = sample(1:motif_width, mut_num) # randomly select mut_num of cols to swap
     

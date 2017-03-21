@@ -194,14 +194,15 @@ pwm_2_seq = function(pwm){
     
     for ( i in 1:ncol(pwm)){
         let = names(which.max(pwm[ ,i]))
+        if (max(pwm[ ,i]) < 0.5){ let = "N"}
         seq = str_c(seq,let)
     }
     return(seq)
 }
-pwm_2_seq(pwm)       
-    
-string_dist()
-    
+# pwm_2_seq(pwm)       
+#     
+# string_dist()
+#     
 
 
     
