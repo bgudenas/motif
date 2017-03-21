@@ -45,7 +45,18 @@ Motif_Implanter = function(seqs, motif, var_num){
 return(seqs)
 }
 
-# 
+Seq2Fasta = function(Seqs){
+    sink(paste0("fasta_",nchar(Seqs[1]), ".txt"))
+    for ( i in 1:length(Seqs)){
+        cat(">")
+        cat(paste(i))
+        cat("\n")
+        cat(Seqs[i])
+        cat("\n")
+        
+    }
+    sink()
+}
 # test_seqs = Motif_Implanter(seqs = Rando_DNA_Strings(seq_num = 20, width = 30), motif ="GGGGGGGG" )
 # background = Motif_Implanter(seqs = Rando_DNA_Strings(seq_num = 20, width = 30), motif ="" )
 
